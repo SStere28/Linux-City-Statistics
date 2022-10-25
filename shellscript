@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+file=0
+city=""
+bestcity=""
+country=""
+popIncrease=0
+declare -i currentPopulation=0
+declare -i previousPopulation=0
+altaTara=0
+
+search_file() {
+ 	for i in "$1"/*; do 
+                #check if directory
+		if [ -d "$i" ]; then
+			file=0
+			search_file "$i"
+		#check if file
+		elif [ -f "$i" ]; then
+				#get value from file 1
+				if(($file == 0)); then
+				curentPopulation=$(head -n 1 "$i")
+				fi
+				#check if file 2
+	                        if(($file ==  1)); then
+				altaTara=0
+				#echo "Nume oras: "$(basename "$(dirname "$(dirname "$i")")")""
+				city="$(basename "$(dirname "$(dirname "$i")")")"
+				#echo "Nume tara: "$(basename "$(dirname "$(dirname "$(dirname "$i")")")")""
+				country="$(basename "$(dirname "$(dirname "$(dirname "$i")")")")"
+				#get value from file 2
+				previousPopulation=$(head -n 1 "$i")
+				file=0
+				fi
+				((file++))
+		fi
+	done
+	
+       	#trec in alta tara
+        if(($altaTara == 2)); then
+	res=$(echo $popIncrease | bc | xargs printf "%.2f" )
+        echo "$country,$bestcity,${res/,/.}%" >> results.csv
+        #echo "Cea mai mare crestere: ${res/,/.} |  in $country,$bestcity"
+	altaTara=0
+	popIncrease=0
+	#trec in alt oras
+	elif (($altaTara == 1)); then
+        average=$(echo "scale=4; ((($curentPopulation-$previousPopulation))/$previousPopulation*100)" | bc | sed -e 's/^-\./-0./' -e 's/^\./0./' )
+		if(( $(echo "$average > $popIncrease"| bc ) )); then
+	  	popIncrease="$average"
+		bestcity="$city"
+		fi
+		if (( $(echo "$average < 0" | bc) )); then
+                if(( $(echo "$popIncrease == 0" | bc) )); then 
+		popIncrease="$average"
+		bestcity="$city"
+		fi
+		fi
+	#echo "$average"
+ 	fi
+        ((altaTara++))
+}
+
+
+
+search_file "input";
